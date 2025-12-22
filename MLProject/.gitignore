@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# MLflow
+mlruns/
+mlartifacts/
+*.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.log
+*.tmp
+confusion_matrix.png
+roc_curve.png
+classification_report.txt
+feature_importance.png
+
+# Environment variables
+.env
+.env.local
+
+# Docker
+Dockerfile
+.dockerignore

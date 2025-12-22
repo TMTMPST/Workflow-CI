@@ -1,0 +1,38 @@
+name: Telco_Churn_Prediction_MLProject
+
+conda_env: conda.yaml
+
+entry_points:
+  main:
+    parameters:
+      data_path:
+        type: string
+        default: "telco_preprocessing"
+      model_type:
+        type: string
+        default: "all"
+      experiment_name:
+        type: string
+        default: "Telco_Churn_MLProject"
+    command: "python modelling.py --data-path {data_path} --model-type {model_type} --experiment-name {experiment_name}"
+
+  train_lr:
+    parameters:
+      data_path:
+        type: string
+        default: "telco_preprocessing"
+    command: "python modelling.py --data-path {data_path} --model-type lr"
+
+  train_rf:
+    parameters:
+      data_path:
+        type: string
+        default: "telco_preprocessing"
+    command: "python modelling.py --data-path {data_path} --model-type rf"
+
+  train_gb:
+    parameters:
+      data_path:
+        type: string
+        default: "telco_preprocessing"
+    command: "python modelling.py --data-path {data_path} --model-type gb"

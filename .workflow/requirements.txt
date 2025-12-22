@@ -1,0 +1,24 @@
+# Requirements for MLflow CI/CD Workflow
+# Core dependencies untuk training model
+
+# Machine Learning
+scikit-learn>=1.3.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# MLflow
+mlflow>=2.10.0
+
+# DagsHub (optional, untuk online tracking)
+dagshub>=0.3.0
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Utilities
+joblib>=1.3.0
+python-dotenv>=1.0.0
+
+# Additional
+scipy>=1.11.0
