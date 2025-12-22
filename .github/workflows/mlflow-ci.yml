@@ -137,8 +137,8 @@ jobs:
     needs: train # Wait for training job to complete
     runs-on: ubuntu-latest
 
-    # Only run on main/master branch (not on PRs)
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    # Run on push to main/master OR manual workflow_dispatch trigger
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
 
     steps:
       # Step 1: Checkout code
