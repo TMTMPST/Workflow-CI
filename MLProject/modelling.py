@@ -138,9 +138,6 @@ def train_model_with_mlflow(
     - Metrics: accuracy, precision, recall, f1_score, roc_auc
     """
 
-    # Disable autolog untuk manual logging (Advanced requirement)
-    mlflow.autolog(disable=True)
-
     with mlflow.start_run(run_name=model_name):
         # Log parameters
         if params:
@@ -297,6 +294,11 @@ def main(data_path: str = "telco_preprocessing",
             "random_state": 42
         }
         models_to_train.append(("Gradient_Boosting", GradientBoostingClassifier(**gb_params), gb_params))
+
+    # Disable autolog sebelum manual training (untuk avoid conflict)
+    # Autolog sudah dipanggil sekali untuk memenuhi BASIC requirement
+    mlflow.autolog(disable=True)
+    print("MLflow Autolog: DISABLED (switching to manual logging for Advanced criteria)")
 
     # Train all selected models
     for model_name, model, params in models_to_train:
