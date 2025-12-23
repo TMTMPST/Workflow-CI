@@ -138,6 +138,9 @@ def train_model_with_mlflow(
     - Metrics: accuracy, precision, recall, f1_score, roc_auc
     """
 
+    # Disable autolog untuk manual logging (Advanced requirement)
+    mlflow.autolog(disable=True)
+
     with mlflow.start_run(run_name=model_name):
         # Log parameters
         if params:
@@ -242,13 +245,14 @@ def main(data_path: str = "telco_preprocessing",
     mlflow.set_experiment(experiment_name)
 
     # Enable MLflow autolog (BASIC requirement untuk Kriteria 2)
+    # Autolog akan di-disable sementara saat manual logging (untuk Advanced)
     mlflow.autolog()
 
     print(f"\n{'='*60}")
     print(f"MLflow Project - Model Training")
     print(f"Experiment: {experiment_name}")
     print(f"Tracking URI: {mlflow.get_tracking_uri()}")
-    print(f"MLflow Autolog: ENABLED")
+    print(f"MLflow Autolog: ENABLED (will be disabled during manual logging)")
     print(f"{'='*60}\n")
 
     # Load data
