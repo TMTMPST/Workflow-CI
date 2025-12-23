@@ -76,9 +76,13 @@ jobs:
 
       # Step 5: Run training with MLflow Project (BASIC requirement untuk Kriteria 3)
       - name: Run Model Training with MLflow Project
+        env:
+          # Use file-based tracking to avoid sqlite issues
+          MLFLOW_TRACKING_URI: file:./mlruns
         run: |
           echo "Starting MLflow Project training..."
-          mlflow run MLProject/ \
+          cd MLProject
+          mlflow run . \
             -P data_path=telco_preprocessing \
             -P model_type=all \
             -P experiment_name=GitHub_Actions_CI \

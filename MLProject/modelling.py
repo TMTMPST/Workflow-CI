@@ -256,6 +256,7 @@ def main(data_path: str = "telco_preprocessing",
     if not inside_mlflow_run:
         # Only set experiment when running directly (python modelling.py)
         mlflow.set_experiment(experiment_name)
+    # When inside mlflow run, tracking URI is already set by environment
 
     # Enable autolog (BASIC requirement untuk Kriteria 2)
     # Will be used by sklearn models automatically
