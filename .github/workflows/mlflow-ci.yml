@@ -79,10 +79,11 @@ jobs:
         run: |
           echo "Starting MLflow Project training..."
           mlflow run MLProject/ \
+            --experiment-name GitHub_Actions_CI \
             -P data_path=telco_preprocessing \
             -P model_type=all \
             -P experiment_name=GitHub_Actions_CI \
-            --env-manager=local
+            --no-conda
           echo "Training completed!"
 
       # Step 6: List generated artifacts (untuk debugging)
