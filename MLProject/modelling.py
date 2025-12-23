@@ -138,91 +138,96 @@ def train_model_with_mlflow(
     - Metrics: accuracy, precision, recall, f1_score, roc_auc
     """
 
-    # Check if running inside mlflow run (via environment variable)
-    inside_mlflow_run = os.environ.get('MLFLOW_RUN_ID') is not None
-
-    # Create run context based on environment
-    if inside_mlflow_run:
-        # Inside mlflow run - create nested run
-        run_manager = mlflow.start_run(run_name=model_name, nested=True)
+    # SOLUSI: Jangan create run baru, log langsung ke parent run dari mlflow run
+    # Jika tidak ada parent run (direct python), baru create run
+    if mlflow.active_run() is None:
+        # Direct python execution - create run
+        with mlflow.start_run(run_name=model_name):
+            _train_and_log(model, model_name, X_train, X_test, y_train, y_test, params)
     else:
-        # Direct python execution - create regular run
-        run_manager = mlflow.start_run(run_name=model_name)
+        # Inside mlflow run - log directly tanpa nested run
+        _train_and_log(model, model_name, X_train, X_test, y_train, y_test, params)
 
-    with run_manager:
-        # Log parameters
-        if params:
-            mlflow.log_params(params)
+    return model
 
-        # Log model class name
-        mlflow.log_param("model_type", model.__class__.__name__)
 
-        # Train model
-        print(f"\n{'='*60}")
-        print(f"Training {model_name}...")
-        print(f"{'='*60}")
+def _train_and_log(model, model_name, X_train, X_test, y_train, y_test, params):
+    """Helper function untuk training dan logging"""
 
-        model.fit(X_train, y_train)
+    # Log parameters dengan prefix
+    if params:
+        for key, value in params.items():
+            mlflow.log_param(f"{model_name}_{key}", value)
 
-        # Predictions
-        y_pred = model.predict(X_test)
-        y_pred_proba = model.predict_proba(X_test)[:, 1]
+    # Log model class name
+    mlflow.log_param(f"{model_name}_type", model.__class__.__name__)
 
-        # Calculate metrics
-        accuracy = accuracy_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred, pos_label='Yes', zero_division=0)
-        recall = recall_score(y_test, y_pred, pos_label='Yes', zero_division=0)
-        f1 = f1_score(y_test, y_pred, pos_label='Yes', zero_division=0)
+    # Train model
+    print(f"\n{'='*60}")
+    print(f"Training {model_name}...")
+    print(f"{'='*60}")
 
-        # Convert string labels to binary for ROC-AUC
-        y_test_binary = (y_test == 'Yes').astype(int)
-        roc_auc = roc_auc_score(y_test_binary, y_pred_proba)
+    model.fit(X_train, y_train)
 
-        # Log metrics
-        mlflow.log_metric("accuracy", accuracy)
-        mlflow.log_metric("precision", precision)
-        mlflow.log_metric("recall", recall)
-        mlflow.log_metric("f1_score", f1)
-        mlflow.log_metric("roc_auc", roc_auc)
+    # Predictions
+    y_pred = model.predict(X_test)
+    y_pred_proba = model.predict_proba(X_test)[:, 1]
 
-        print(f"\nMetrics:")
-        print(f"  Accuracy:  {accuracy:.4f}")
-        print(f"  Precision: {precision:.4f}")
-        print(f"  Recall:    {recall:.4f}")
-        print(f"  F1-Score:  {f1:.4f}")
-        print(f"  ROC-AUC:   {roc_auc:.4f}")
+    # Calculate metrics
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred, pos_label='Yes', zero_division=0)
+    recall = recall_score(y_test, y_pred, pos_label='Yes', zero_division=0)
+    f1 = f1_score(y_test, y_pred, pos_label='Yes', zero_division=0)
 
-        # ===== ARTIFACTS (4+) untuk Advanced Criteria =====
+    # Convert string labels to binary for ROC-AUC
+    y_test_binary = (y_test == 'Yes').astype(int)
+    roc_auc = roc_auc_score(y_test_binary, y_pred_proba)
 
-        # 1. Confusion Matrix
-        cm_path = plot_confusion_matrix(y_test, y_pred, "confusion_matrix.png")
-        mlflow.log_artifact(cm_path)
-        print(f"  [ARTIFACT] confusion_matrix.png")
+    # Log metrics dengan prefix
+    mlflow.log_metric(f"{model_name}_accuracy", accuracy)
+    mlflow.log_metric(f"{model_name}_precision", precision)
+    mlflow.log_metric(f"{model_name}_recall", recall)
+    mlflow.log_metric(f"{model_name}_f1_score", f1)
+    mlflow.log_metric(f"{model_name}_roc_auc", roc_auc)
 
-        # 2. ROC Curve
-        roc_path = plot_roc_curve(y_test, y_pred_proba, "roc_curve.png")
-        mlflow.log_artifact(roc_path)
-        print(f"  [ARTIFACT] roc_curve.png")
+    print(f"\nMetrics:")
+    print(f"  Accuracy:  {accuracy:.4f}")
+    print(f"  Precision: {precision:.4f}")
+    print(f"  Recall:    {recall:.4f}")
+    print(f"  F1-Score:  {f1:.4f}")
+    print(f"  ROC-AUC:   {roc_auc:.4f}")
 
-        # 3. Classification Report (text file)
-        report = classification_report(y_test, y_pred,
-                                      target_names=['No Churn', 'Churn'])
-        report_path = "classification_report.txt"
-        with open(report_path, 'w') as f:
-            f.write(report)
-        mlflow.log_artifact(report_path)
-        print(f"  [ARTIFACT] classification_report.txt")
+    # ===== ARTIFACTS (4+) untuk Advanced Criteria =====
 
-        # 4. Feature Importance (untuk tree-based models)
-        if hasattr(model, 'feature_importances_'):
-            feature_names = X_train.columns.tolist()
-            fi_path = plot_feature_importance(model, feature_names, "feature_importance.png")
-            if fi_path:
-                mlflow.log_artifact(fi_path)
-                print(f"  [ARTIFACT] feature_importance.png")
+    # 1. Confusion Matrix
+    cm_path = plot_confusion_matrix(y_test, y_pred, f"{model_name}_cm.png")
+    mlflow.log_artifact(cm_path)
+    print(f"  [ARTIFACT] {model_name}_cm.png")
 
-        # Log model
-        mlflow.sklearn.log_model(model, "model")
+    # 2. ROC Curve
+    roc_path = plot_roc_curve(y_test, y_pred_proba, f"{model_name}_roc.png")
+    mlflow.log_artifact(roc_path)
+    print(f"  [ARTIFACT] {model_name}_roc.png")
+
+    # 3. Classification Report (text file)
+    report = classification_report(y_test, y_pred,
+                                  target_names=['No Churn', 'Churn'])
+    report_path = f"{model_name}_report.txt"
+    with open(report_path, 'w') as f:
+        f.write(report)
+    mlflow.log_artifact(report_path)
+    print(f"  [ARTIFACT] {model_name}_report.txt")
+
+    # 4. Feature Importance (untuk tree-based models)
+    if hasattr(model, 'feature_importances_'):
+        feature_names = X_train.columns.tolist()
+        fi_path = plot_feature_importance(model, feature_names, f"{model_name}_fi.png")
+        if fi_path:
+            mlflow.log_artifact(fi_path)
+            print(f"  [ARTIFACT] {model_name}_fi.png")
+
+    # Log model dengan prefix
+    mlflow.sklearn.log_model(model, f"{model_name}_model")
         print(f"  [MODEL] Logged to MLflow")
 
         # Cleanup temporary files
