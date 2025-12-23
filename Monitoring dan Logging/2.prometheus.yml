@@ -1,0 +1,63 @@
+# Prometheus Configuration
+# Dicoding Submission - Kriteria 4 (Advanced)
+
+global:
+  scrape_interval: 15s # Scrape metrics every 15 seconds
+  evaluation_interval: 15s # Evaluate rules every 15 seconds
+  external_labels:
+    monitor: "telco-churn-monitor"
+    environment: "local"
+
+# Alertmanager configuration (optional)
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - 'localhost:9093'
+
+# Load rules once and periodically evaluate them
+rule_files:
+  # - "alert_rules.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Scrape Prometheus itself
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+        labels:
+          service: "prometheus"
+
+  # Scrape Flask API metrics
+  - job_name: "telco-churn-api"
+    scrape_interval: 5s # Scrape more frequently for API
+    static_configs:
+      - targets: ["localhost:5000"]
+        labels:
+          service: "inference-api"
+          application: "telco-churn-prediction"
+
+  # Scrape Prometheus Exporter (custom metrics)
+  - job_name: "prometheus-exporter"
+    scrape_interval: 10s
+    static_configs:
+      - targets: ["localhost:8000"]
+        labels:
+          service: "custom-exporter"
+          application: "telco-churn-metrics"
+
+  # Node Exporter (optional - for system metrics)
+  # Uncomment if you install node_exporter
+  # - job_name: 'node'
+  #   static_configs:
+  #     - targets: ['localhost:9100']
+  #       labels:
+  #         service: 'node-exporter'
+
+# Storage configuration
+storage:
+  tsdb:
+    path: ./data
+    retention:
+      time: 15d
+      size: 10GB

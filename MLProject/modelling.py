@@ -38,7 +38,7 @@ import joblib
 def load_preprocessed_data(data_dir: Path):
     """Load data yang sudah di-preprocess"""
     print(f"Loading data from: {data_dir}")
-    
+
     X_train = pd.read_csv(data_dir / "X_train.csv")
     X_test = pd.read_csv(data_dir / "X_test.csv")
     y_train = pd.read_csv(data_dir / "y_train.csv").values.ravel()
@@ -131,7 +131,7 @@ def train_model_with_mlflow(
 ):
     """
     Train model dengan manual logging MLflow (Advanced Criteria)
-    
+
     KRITERIA ADVANCED:
     - Manual logging (bukan autolog)
     - 4+ artifacts: confusion matrix, ROC curve, classification report, feature importance
@@ -226,30 +226,34 @@ def train_model_with_mlflow(
         return model
 
 
-def main(data_path: str = "telco_preprocessing", 
+def main(data_path: str = "telco_preprocessing",
          model_type: str = "all",
          experiment_name: str = "Telco_Churn_MLProject"):
     """
     Main training function
-    
+
     Args:
         data_path: Path ke folder preprocessed data
         model_type: Model yang akan dilatih (lr, rf, gb, atau all)
         experiment_name: Nama MLflow experiment
     """
-    
+
     # Setup MLflow experiment
     mlflow.set_experiment(experiment_name)
-    
+
+    # Enable MLflow autolog (BASIC requirement untuk Kriteria 2)
+    mlflow.autolog()
+
     print(f"\n{'='*60}")
     print(f"MLflow Project - Model Training")
     print(f"Experiment: {experiment_name}")
     print(f"Tracking URI: {mlflow.get_tracking_uri()}")
+    print(f"MLflow Autolog: ENABLED")
     print(f"{'='*60}\n")
 
     # Load data
     data_dir = Path(data_path)
-    
+
     if not data_dir.exists():
         print(f"Error: Data directory tidak ditemukan: {data_dir}")
         print("   Pastikan folder telco_preprocessing ada di MLProject/")
@@ -259,7 +263,7 @@ def main(data_path: str = "telco_preprocessing",
 
     # Training models berdasarkan argument
     models_to_train = []
-    
+
     if model_type in ["lr", "all"]:
         lr_params = {
             "max_iter": 1000,
@@ -329,7 +333,7 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    
+
     main(
         data_path=args.data_path,
         model_type=args.model_type,
