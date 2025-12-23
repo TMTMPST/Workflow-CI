@@ -138,92 +138,92 @@ def train_model_with_mlflow(
     - Metrics: accuracy, precision, recall, f1_score, roc_auc
     """
 
-    # Log parameters
-    if params:
-        for key, value in params.items():
-            mlflow.log_param(f"{model_name}_{key}", value)
+    with mlflow.start_run(run_name=model_name):
+        # Log parameters
+        if params:
+            mlflow.log_params(params)
 
-    # Log model class name
-    mlflow.log_param(f"{model_name}_model_type", model.__class__.__name__)
+        # Log model class name
+        mlflow.log_param("model_type", model.__class__.__name__)
 
-    # Train model
-    print(f"\n{'='*60}")
-    print(f"Training {model_name}...")
-    print(f"{'='*60}")
+        # Train model
+        print(f"\n{'='*60}")
+        print(f"Training {model_name}...")
+        print(f"{'='*60}")
 
-    model.fit(X_train, y_train)
+        model.fit(X_train, y_train)
 
-    # Predictions
-    y_pred = model.predict(X_test)
-    y_pred_proba = model.predict_proba(X_test)[:, 1]
+        # Predictions
+        y_pred = model.predict(X_test)
+        y_pred_proba = model.predict_proba(X_test)[:, 1]
 
-    # Calculate metrics
-    accuracy = accuracy_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred, pos_label='Yes', zero_division=0)
-    recall = recall_score(y_test, y_pred, pos_label='Yes', zero_division=0)
-    f1 = f1_score(y_test, y_pred, pos_label='Yes', zero_division=0)
+        # Calculate metrics
+        accuracy = accuracy_score(y_test, y_pred)
+        precision = precision_score(y_test, y_pred, pos_label='Yes', zero_division=0)
+        recall = recall_score(y_test, y_pred, pos_label='Yes', zero_division=0)
+        f1 = f1_score(y_test, y_pred, pos_label='Yes', zero_division=0)
 
-    # Convert string labels to binary for ROC-AUC
-    y_test_binary = (y_test == 'Yes').astype(int)
-    roc_auc = roc_auc_score(y_test_binary, y_pred_proba)
+        # Convert string labels to binary for ROC-AUC
+        y_test_binary = (y_test == 'Yes').astype(int)
+        roc_auc = roc_auc_score(y_test_binary, y_pred_proba)
 
-    # Log metrics with model name prefix
-    mlflow.log_metric(f"{model_name}_accuracy", accuracy)
-    mlflow.log_metric(f"{model_name}_precision", precision)
-    mlflow.log_metric(f"{model_name}_recall", recall)
-    mlflow.log_metric(f"{model_name}_f1_score", f1)
-    mlflow.log_metric(f"{model_name}_roc_auc", roc_auc)
+        # Log metrics
+        mlflow.log_metric("accuracy", accuracy)
+        mlflow.log_metric("precision", precision)
+        mlflow.log_metric("recall", recall)
+        mlflow.log_metric("f1_score", f1)
+        mlflow.log_metric("roc_auc", roc_auc)
 
-    print(f"\nMetrics:")
-    print(f"  Accuracy:  {accuracy:.4f}")
-    print(f"  Precision: {precision:.4f}")
-    print(f"  Recall:    {recall:.4f}")
-    print(f"  F1-Score:  {f1:.4f}")
-    print(f"  ROC-AUC:   {roc_auc:.4f}")
+        print(f"\nMetrics:")
+        print(f"  Accuracy:  {accuracy:.4f}")
+        print(f"  Precision: {precision:.4f}")
+        print(f"  Recall:    {recall:.4f}")
+        print(f"  F1-Score:  {f1:.4f}")
+        print(f"  ROC-AUC:   {roc_auc:.4f}")
 
-    # ===== ARTIFACTS (4+) untuk Advanced Criteria =====
+        # ===== ARTIFACTS (4+) untuk Advanced Criteria =====
 
-    # 1. Confusion Matrix
-    cm_path = plot_confusion_matrix(y_test, y_pred, f"{model_name}_confusion_matrix.png")
-    mlflow.log_artifact(cm_path)
-    print(f"  [ARTIFACT] {model_name}_confusion_matrix.png")
+        # 1. Confusion Matrix
+        cm_path = plot_confusion_matrix(y_test, y_pred, "confusion_matrix.png")
+        mlflow.log_artifact(cm_path)
+        print(f"  [ARTIFACT] confusion_matrix.png")
 
-    # 2. ROC Curve
-    roc_path = plot_roc_curve(y_test, y_pred_proba, f"{model_name}_roc_curve.png")
-    mlflow.log_artifact(roc_path)
-    print(f"  [ARTIFACT] {model_name}_roc_curve.png")
+        # 2. ROC Curve
+        roc_path = plot_roc_curve(y_test, y_pred_proba, "roc_curve.png")
+        mlflow.log_artifact(roc_path)
+        print(f"  [ARTIFACT] roc_curve.png")
 
-    # 3. Classification Report (text file)
-    report = classification_report(y_test, y_pred,
-                                  target_names=['No Churn', 'Churn'])
-    report_path = f"{model_name}_classification_report.txt"
-    with open(report_path, 'w') as f:
-        f.write(report)
-    mlflow.log_artifact(report_path)
-    print(f"  [ARTIFACT] {model_name}_classification_report.txt")
+        # 3. Classification Report (text file)
+        report = classification_report(y_test, y_pred,
+                                      target_names=['No Churn', 'Churn'])
+        report_path = "classification_report.txt"
+        with open(report_path, 'w') as f:
+            f.write(report)
+        mlflow.log_artifact(report_path)
+        print(f"  [ARTIFACT] classification_report.txt")
 
-    # 4. Feature Importance (untuk tree-based models)
-    if hasattr(model, 'feature_importances_'):
-        feature_names = X_train.columns.tolist()
-        fi_path = plot_feature_importance(model, feature_names, f"{model_name}_feature_importance.png")
-        if fi_path:
-            mlflow.log_artifact(fi_path)
-            print(f"  [ARTIFACT] {model_name}_feature_importance.png")
+        # 4. Feature Importance (untuk tree-based models)
+        if hasattr(model, 'feature_importances_'):
+            feature_names = X_train.columns.tolist()
+            fi_path = plot_feature_importance(model, feature_names, "feature_importance.png")
+            if fi_path:
+                mlflow.log_artifact(fi_path)
+                print(f"  [ARTIFACT] feature_importance.png")
 
-    # Log model
-    mlflow.sklearn.log_model(model, f"{model_name}_model")
-    print(f"  [MODEL] {model_name} logged to MLflow")
+        # Log model
+        mlflow.sklearn.log_model(model, "model")
+        print(f"  [MODEL] Logged to MLflow")
 
-    # Cleanup temporary files
-    for temp_file in [f"{model_name}_confusion_matrix.png", f"{model_name}_roc_curve.png",
-                     f"{model_name}_classification_report.txt", f"{model_name}_feature_importance.png"]:
-        if os.path.exists(temp_file):
-            os.remove(temp_file)
+        # Cleanup temporary files
+        for temp_file in ["confusion_matrix.png", "roc_curve.png",
+                         "classification_report.txt", "feature_importance.png"]:
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
 
-    print(f"\n[DONE] {model_name} training completed")
-    print(f"{'='*60}\n")
+        print(f"\n[DONE] {model_name} training completed")
+        print(f"{'='*60}\n")
 
-    return model
+        return model
 
 
 def main(data_path: str = "telco_preprocessing",
