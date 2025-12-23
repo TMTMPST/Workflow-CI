@@ -130,19 +130,12 @@ def train_model_with_mlflow(
     params: dict = None
 ):
 
+    # End any existing active run to avoid conflicts
+    if mlflow.active_run():
+        mlflow.end_run()
 
-    # Check if running inside mlflow run (has active run)
-    active_run = mlflow.active_run()
-
-    # If no active run, create one. If active run exists (from mlflow run), use it as nested
-    if active_run is None:
-        # Direct python execution - create new run
-        run_context = mlflow.start_run(run_name=model_name)
-    else:
-        # Inside mlflow run - create nested run
-        run_context = mlflow.start_run(run_name=model_name, nested=True)
-
-    with run_context:
+    # Create fresh run
+    with mlflow.start_run(run_name=model_name):
         # Log parameters
         if params:
             mlflow.log_params(params)
