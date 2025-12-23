@@ -138,7 +138,8 @@ def train_model_with_mlflow(
     - Metrics: accuracy, precision, recall, f1_score, roc_auc
     """
 
-    with mlflow.start_run(run_name=model_name):
+    # Create nested run untuk manual logging
+    with mlflow.start_run(run_name=model_name, nested=True):
         # Log parameters
         if params:
             mlflow.log_params(params)
@@ -241,15 +242,14 @@ def main(data_path: str = "telco_preprocessing",
     # Setup MLflow experiment
     mlflow.set_experiment(experiment_name)
 
-    # Enable MLflow autolog (BASIC requirement untuk Kriteria 2)
-    # Autolog akan di-disable sementara saat manual logging (untuk Advanced)
+    # Enable autolog (BASIC requirement Kriteria 2)
     mlflow.autolog()
 
     print(f"\n{'='*60}")
     print(f"MLflow Project - Model Training")
     print(f"Experiment: {experiment_name}")
     print(f"Tracking URI: {mlflow.get_tracking_uri()}")
-    print(f"MLflow Autolog: ENABLED (will be disabled during manual logging)")
+    print(f"MLflow Autolog: ENABLED")
     print(f"{'='*60}\n")
 
     # Load data
@@ -295,12 +295,7 @@ def main(data_path: str = "telco_preprocessing",
         }
         models_to_train.append(("Gradient_Boosting", GradientBoostingClassifier(**gb_params), gb_params))
 
-    # Disable autolog sebelum manual training (untuk avoid conflict)
-    # Autolog sudah dipanggil sekali untuk memenuhi BASIC requirement
-    mlflow.autolog(disable=True)
-    print("MLflow Autolog: DISABLED (switching to manual logging for Advanced criteria)")
-
-    # Train all selected models
+    # Train all selected models with manual logging
     for model_name, model, params in models_to_train:
         train_model_with_mlflow(
             model,
