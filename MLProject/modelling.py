@@ -120,37 +120,6 @@ def plot_feature_importance(model, feature_names, save_path: str = "feature_impo
     return save_path
 
 
-def train_model_with_mlflow(
-    model,
-    model_name: str,
-    X_train,
-    X_test,
-    y_train,
-    y_test,
-    params: dict = None
-):
-    """
-    Train model dengan manual logging MLflow (Advanced Criteria)
-
-    KRITERIA ADVANCED:
-    - Manual logging (bukan autolog)
-    - 4+ artifacts: confusion matrix, ROC curve, classification report, feature importance
-    - Metrics: accuracy, precision, recall, f1_score, roc_auc
-    """
-
-    # SOLUSI: Jangan create run baru, log langsung ke parent run dari mlflow run
-    # Jika tidak ada parent run (direct python), baru create run
-    if mlflow.active_run() is None:
-        # Direct python execution - create run
-        with mlflow.start_run(run_name=model_name):
-            _train_and_log(model, model_name, X_train, X_test, y_train, y_test, params)
-    else:
-        # Inside mlflow run - log directly tanpa nested run
-        _train_and_log(model, model_name, X_train, X_test, y_train, y_test, params)
-
-    return model
-
-
 def _train_and_log(model, model_name, X_train, X_test, y_train, y_test, params):
     """Helper function untuk training dan logging"""
 
@@ -228,18 +197,41 @@ def _train_and_log(model, model_name, X_train, X_test, y_train, y_test, params):
 
     # Log model dengan prefix
     mlflow.sklearn.log_model(model, f"{model_name}_model")
-        print(f"  [MODEL] Logged to MLflow")
+    print(f"  [MODEL] Logged to MLflow")
 
-        # Cleanup temporary files
-        for temp_file in ["confusion_matrix.png", "roc_curve.png",
-                         "classification_report.txt", "feature_importance.png"]:
-            if os.path.exists(temp_file):
-                os.remove(temp_file)
+    # Cleanup temporary files
+    for temp_file in [f"{model_name}_cm.png", f"{model_name}_roc.png",
+                     f"{model_name}_report.txt", f"{model_name}_fi.png"]:
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
 
-        print(f"\n[DONE] {model_name} training completed")
-        print(f"{'='*60}\n")
+    print(f"\n[DONE] {model_name} training completed")
+    print(f"{'='*60}\n")
 
-        return model
+
+def train_model_with_mlflow(
+    model,
+    model_name: str,
+    X_train,
+    X_test,
+    y_train,
+    y_test,
+    params: dict = None
+):
+    """
+    Train model dengan manual logging MLflow (Advanced Criteria)
+
+    KRITERIA ADVANCED:
+    - Manual logging (bukan autolog)
+    - 4+ artifacts: confusion matrix, ROC curve, classification report, feature importance
+    - Metrics: accuracy, precision, recall, f1_score, roc_auc
+    """
+
+    # Log directly to the active run created by mlflow run
+    # All 3 models log to same parent run with prefixed names
+    _train_and_log(model, model_name, X_train, X_test, y_train, y_test, params)
+
+    return model
 
 
 def main(data_path: str = "telco_preprocessing",
@@ -249,13 +241,17 @@ def main(data_path: str = "telco_preprocessing",
     Main training function
 
     Args:
-        data_path: Path ke folder preprocessed data
-        model_type: Model yang akan dilatih (lr, rf, gb, atau all)
-        experiment_name: Nama MLflow experiment
+        data_path: Path to preprocessed data folder
+        model_type: Type of model to train (lr/rf/gb/all)
+        experiment_name: MLflow experiment name
     """
 
-    # Setup MLflow experiment
-    mlflow.set_experiment(experiment_name)
+    # Check if running inside mlflow run (MLflow sets MLFLOW_RUN_ID env var)
+    inside_mlflow_run = os.environ.get("MLFLOW_RUN_ID") is not None
+
+    if not inside_mlflow_run:
+        # Only set experiment when running directly (python modelling.py)
+        mlflow.set_experiment(experiment_name)
 
     # Enable autolog (BASIC requirement untuk Kriteria 2)
     # Will be used by sklearn models automatically
