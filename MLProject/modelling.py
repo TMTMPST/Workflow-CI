@@ -138,7 +138,18 @@ def train_model_with_mlflow(
     - Metrics: accuracy, precision, recall, f1_score, roc_auc
     """
 
-    with mlflow.start_run(run_name=model_name):
+    # Check if running inside mlflow run (via environment variable)
+    inside_mlflow_run = os.environ.get('MLFLOW_RUN_ID') is not None
+    
+    # Create run context based on environment
+    if inside_mlflow_run:
+        # Inside mlflow run - create nested run
+        run_manager = mlflow.start_run(run_name=model_name, nested=True)
+    else:
+        # Direct python execution - create regular run
+        run_manager = mlflow.start_run(run_name=model_name)
+    
+    with run_manager:
         # Log parameters
         if params:
             mlflow.log_params(params)
@@ -240,11 +251,16 @@ def main(data_path: str = "telco_preprocessing",
 
     # Setup MLflow experiment
     mlflow.set_experiment(experiment_name)
+    
+    # Enable autolog (BASIC requirement untuk Kriteria 2)
+    # Will be used by sklearn models automatically
+    mlflow.autolog(log_models=False, exclusive=False)
 
     print(f"\n{'='*60}")
     print(f"MLflow Project - Model Training")
     print(f"Experiment: {experiment_name}")
     print(f"Tracking URI: {mlflow.get_tracking_uri()}")
+    print(f"MLflow Autolog: ENABLED (non-exclusive mode)")
     print(f"{'='*60}\n")
 
     # Load data

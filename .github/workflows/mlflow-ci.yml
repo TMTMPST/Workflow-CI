@@ -74,12 +74,15 @@ jobs:
           test -f MLProject/modelling.py && echo "[OK] modelling.py found" || echo "[ERROR] modelling.py NOT found"
           test -d MLProject/telco_preprocessing && echo "[OK] Dataset folder found" || echo "[ERROR] Dataset folder NOT found"
 
-      # Step 5: Run training directly with Python (bypass conda environment creation)
-      - name: Run Model Training
+      # Step 5: Run training with MLflow Project (BASIC requirement untuk Kriteria 3)
+      - name: Run Model Training with MLflow Project
         run: |
-          echo "Starting model training..."
-          cd MLProject
-          python modelling.py --data-path telco_preprocessing --model-type all --experiment-name "GitHub_Actions_CI"
+          echo "Starting MLflow Project training..."
+          mlflow run MLProject/ \
+            -P data_path=telco_preprocessing \
+            -P model_type=all \
+            -P experiment_name=GitHub_Actions_CI \
+            --env-manager=local
           echo "Training completed!"
 
       # Step 6: List generated artifacts (untuk debugging)
