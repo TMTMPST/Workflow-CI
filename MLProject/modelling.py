@@ -129,16 +129,20 @@ def train_model_with_mlflow(
     y_test,
     params: dict = None
 ):
-    """
-    Train model dengan manual logging MLflow (Advanced Criteria)
 
-    KRITERIA ADVANCED:
-    - Manual logging (bukan autolog)
-    - 4+ artifacts: confusion matrix, ROC curve, classification report, feature importance
-    - Metrics: accuracy, precision, recall, f1_score, roc_auc
-    """
 
-    with mlflow.start_run(run_name=model_name):
+    # Check if running inside mlflow run (has active run)
+    active_run = mlflow.active_run()
+
+    # If no active run, create one. If active run exists (from mlflow run), use it as nested
+    if active_run is None:
+        # Direct python execution - create new run
+        run_context = mlflow.start_run(run_name=model_name)
+    else:
+        # Inside mlflow run - create nested run
+        run_context = mlflow.start_run(run_name=model_name, nested=True)
+
+    with run_context:
         # Log parameters
         if params:
             mlflow.log_params(params)
