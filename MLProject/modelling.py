@@ -120,8 +120,11 @@ def plot_feature_importance(model, feature_names, save_path: str = "feature_impo
     return save_path
 
 
-def _train_and_log(model, model_name, X_train, X_test, y_train, y_test, params):
+def _train_and_log(model, model_name, X_train, X_test, y_train, y_test, params, run=None):
     """Helper function untuk training dan logging"""
+
+    # Use the provided run context if available
+    active_run = run or mlflow.active_run()
 
     # Log parameters dengan prefix
     if params:
@@ -248,6 +251,7 @@ def main(data_path: str = "telco_preprocessing",
 
     # Check if running inside mlflow run (MLflow sets MLFLOW_RUN_ID env var)
     inside_mlflow_run = os.environ.get("MLFLOW_RUN_ID") is not None
+    run_id = os.environ.get("MLFLOW_RUN_ID")
 
     if not inside_mlflow_run:
         # Only set experiment when running directly (python modelling.py)
@@ -261,6 +265,9 @@ def main(data_path: str = "telco_preprocessing",
     print(f"MLflow Project - Model Training")
     print(f"Experiment: {experiment_name}")
     print(f"Tracking URI: {mlflow.get_tracking_uri()}")
+    print(f"Inside MLflow Run: {inside_mlflow_run}")
+    if run_id:
+        print(f"Parent Run ID: {run_id}")
     print(f"MLflow Autolog: ENABLED (non-exclusive mode)")
     print(f"{'='*60}\n")
 
@@ -308,13 +315,17 @@ def main(data_path: str = "telco_preprocessing",
         models_to_train.append(("Gradient_Boosting", GradientBoostingClassifier(**gb_params), gb_params))
 
     # Train all selected models with manual logging
-    for model_name, model, params in models_to_train:
-        train_model_with_mlflow(
-            model,
-            model_name,
-            X_train, X_test, y_train, y_test,
-            params=params
-        )
+    # Use mlflow.start_run() to properly attach to the parent run context
+    with mlflow.start_run() as run:
+        print(f"[INFO] Active Run ID: {run.info.run_id}")
+
+        for model_name, model, params in models_to_train:
+            train_model_with_mlflow(
+                model,
+                model_name,
+                X_train, X_test, y_train, y_test,
+                params=params
+            )
 
     print("\n" + "="*60)
     print(f"[SUCCESS] Training completed!")
