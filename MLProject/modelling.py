@@ -140,7 +140,7 @@ def train_model_with_mlflow(
 
     # Check if running inside mlflow run (via environment variable)
     inside_mlflow_run = os.environ.get('MLFLOW_RUN_ID') is not None
-    
+
     # Create run context based on environment
     if inside_mlflow_run:
         # Inside mlflow run - create nested run
@@ -148,7 +148,7 @@ def train_model_with_mlflow(
     else:
         # Direct python execution - create regular run
         run_manager = mlflow.start_run(run_name=model_name)
-    
+
     with run_manager:
         # Log parameters
         if params:
@@ -251,7 +251,7 @@ def main(data_path: str = "telco_preprocessing",
 
     # Setup MLflow experiment
     mlflow.set_experiment(experiment_name)
-    
+
     # Enable autolog (BASIC requirement untuk Kriteria 2)
     # Will be used by sklearn models automatically
     mlflow.autolog(log_models=False, exclusive=False)
